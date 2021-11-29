@@ -64,6 +64,8 @@ namespace LilLegendViewer
         // Check the selected radiobuttons under "Category" and send that request
         // to GetUrl. It will then make that information available in the 
         // Dictionary skinName. 
+        // Loads all names of Little Legends from the URL if it hasn't already been done and
+        // makes them available to be selected in the dropdown cB_Character
         private void Button_Load_Click(object sender, EventArgs e)
         {
             // Avoid loading everything if we have loaded it already
@@ -92,7 +94,6 @@ namespace LilLegendViewer
                     Console.WriteLine("\nException Caught!\nMessage :{0} ", exception.Message);
                     return;
                 }
-                Console.WriteLine("GotHere");
 
                 // Read line by line, eliminate line if failed criteria, recombinate into
                 // final string for regex matching
@@ -102,6 +103,7 @@ namespace LilLegendViewer
 
                 Console.WriteLine(results.ToString());
 
+                // Scan each line for uniquely identifying references that ensure this is a Little Legend
                 while ((line = sr.ReadLine()) != null)
                 {
                     if (line.Contains("href") && line.Contains("base egg") && line.Contains("variants"))
@@ -159,9 +161,11 @@ namespace LilLegendViewer
                     {
                         string skinName = match.Value.Replace("/" + name_url.Key + "_", "");
 
+                        // If we haven't already added this skin, add it again
                         if (!skins.Contains(skinName))
                         {
                             // Eliminate incorrectly skimmed skins (skins not specifically for the little legend in question)
+                            // by ensuring this skin is for the current Little Legend
                             if (match.Value.Contains(name_url.Key))
                             {
                                 skins.Add(skinName);
@@ -171,11 +175,16 @@ namespace LilLegendViewer
                     skinName[name_url.Key] = skins;
                 }
             }
+
+            // Display relevant elements incase of first run
             label_Character.Visible = true;
             cB_Character.Visible = true;
+
+            // Set boolean so LOAD does not do all of this work again
             LL_Loaded = true;
         }
 
+        // Little Legend name changed so update the combobox to display all the skins associated with the new Little Legend
         private void cB_Character_SelectedIndexChanged(object sender, EventArgs e)
         {
 
@@ -194,10 +203,12 @@ namespace LilLegendViewer
                 cB_Skin.Items.Add(skinTrimmed);
             }
 
+            // TODO
             // Now that we've add the skins, we need to check if any of them should be checked
             // i.e. they exist in the listbox of images
             //foreach (object item in lB_Images.Items){ }
 
+            // Ensure these elements are visible for first run
             label_Skin.Visible = true;
             cB_Skin.Visible = true;
         }
@@ -207,6 +218,7 @@ namespace LilLegendViewer
 
         }
 
+        // Either download the image associated with the selected skin or remove it from the listbox
         private void cB_Skin_SelectedIndexChanged_1(object sender, EventArgs e)
         {
             int selected = cB_Skin.SelectedIndex;
@@ -243,13 +255,13 @@ namespace LilLegendViewer
                     string fileName = pieces[0] + "_" + pieces[1] + "_Tier_" + pieces[2] + ".png";
                     string url = urls[pieces[0]] + @"?file=" + fileName;
 
-                    // Okay so we messed up and literally need to download the file not 
-                    // from what we thought but instead a url like this:
+                    // Revision: We literally need to download the file, not from what we thought but instead a url like this:
                     // https://static.wikia.nocookie.net/leagueoflegends/images/d/d6/Featherknight_Pengu_Tier_1.png/revision/latest/scale-to-width-down/1000?cb=20190612162426
 
                     // To do that we need to redownload the html and locate the, say, above url
                     string results = webClient.DownloadString(urls[pieces[0]]);
 
+                    // Regex to locate the wiki specific image url for where the png is actually held
                     Regex getImageURL = new Regex("\"{1}" + @"https://static.wikia.nocookie.net/leagueoflegends/images/\w{1}/\w{2}/" + fileName + @"/revision/latest\?cb=\d{1,}?" + "\"{1}");
 
                     char[] toTrim = { '"' };
@@ -259,10 +271,9 @@ namespace LilLegendViewer
                     // Download the file and attach to imagelist
                     Byte[] data = webClient.DownloadData(imageURL);
 
+                    // Convert downloaded data into a valid Image and append to the image dictionary for later reference
                     Image image = (Bitmap)((new ImageConverter()).ConvertFrom(data));
                     imageDict[name] = image;
-
-
                 }
             }
             // Else we remove it from the listBox
@@ -275,7 +286,8 @@ namespace LilLegendViewer
                 }
             }
         }
-
+        
+        // Display selected image in listbox lB_Images
         private void button_Display_Click(object sender, EventArgs e)
         {
             // Check if an item is selected
@@ -291,8 +303,11 @@ namespace LilLegendViewer
             pB_Image.Image = imageDict[lB_Images.SelectedItem.ToString()];
         }
 
+        // Remove selected image in listbox lB_images
         private void button_Remove_Click(object sender, EventArgs e)
         {
+            // TODO Uncheck the corresponding skin in the cB_skin
+
             // Check if an item is selected
             if (lB_Images.SelectedIndex.Equals(-1))
             {
@@ -306,8 +321,11 @@ namespace LilLegendViewer
             lB_Images.Items.Remove(lB_Images.SelectedItem);
         }
 
+        // Clear all images in listbox lB_images
         private void button_Clear_Click(object sender, EventArgs e)
         {
+            // TODO Uncheck the corresponding skin(s) in the cB_skin
+
             lB_Images.Items.Clear();
         }
     }
